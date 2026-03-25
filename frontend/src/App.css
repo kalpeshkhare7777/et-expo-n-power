@@ -1,38 +1,189 @@
-.App {
+/* src/App.css */
+:root {
+  --iitb-blue: #003366;
+  --iitb-light: #00509d;
+  --success: #28a745;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  --bg-soft: #f8f9fa;
+  --card-shadow: 0 8px 30px rgba(0,0,0,0.08);
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, sans-serif;
+  background-color: #f0f2f5;
+  color: #2d3436;
+}
+
+.app-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+/* Header & IITB Branding */
+.header {
+  background: var(--iitb-blue);
+  color: white;
+  padding: 30px;
+  border-radius: 16px 16px 0 0;
+  text-align: center;
+  box-shadow: var(--card-shadow);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.header p {
+  margin: 10px 0 0;
+  opacity: 0.9;
+  font-weight: 300;
+}
+
+/* Stats & Mastery Bar [cite: 92, 122] */
+.stats-bar {
+  background: rgb(10, 93, 148);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.mastery-progress-container {
+  width: 200px;
+  height: 10px;
+  background: #eee;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-left: 10px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.mastery-fill {
+  height: 100%;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Adaptive Content Card [cite: 22, 140] */
+.quiz-card {
+  background: white;
+  padding: 40px;
+  border-radius: 0 0 16px 16px;
+  box-shadow: var(--card-shadow);
+  min-height: 400px;
+}
+
+.status-message {
+  color: var(--iitb-light);
+  font-weight: 600;
+  margin-bottom: 25px;
+  padding: 10px;
+  background: #e7f3ff;
+  border-radius: 8px;
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.question-text {
+  font-size: 1.4rem;
+  line-height: 1.5;
+  margin-bottom: 30px;
+  color: #1e272e;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+/* Options Interaction [cite: 27, 58] */
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+.option-btn {
+  padding: 20px;
+  font-size: 1.1rem;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #444;
+}
+
+.option-btn:hover {
+  border-color: var(--iitb-light);
+  background: #f0f7ff;
+  transform: translateY(-2px);
+}
+
+/* Hint & Remedial Scaffolding [cite: 59, 1273, 1283] */
+.hint-container {
+  margin-top: 30px;
+  border-top: 1px dashed #ccc;
+  padding-top: 20px;
+}
+
+.hint-trigger {
+  background: none;
+  border: none;
+  color: var(--iitb-light);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.hint-box {
+  margin-top: 15px;
+  padding: 20px;
+  background: #fff9c4;
+  border-left: 6px solid #fbc02d;
+  border-radius: 4px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.footer {
+  text-align: center;
+  margin-top: 30px;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+}
+
+.learning-section {
+  text-align: left;
+  line-height: 1.6;
+}
+
+.section-title {
+  color: var(--iitb-blue);
+  border-bottom: 2px solid var(--iitb-blue);
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.content-box {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 5px solid var(--iitb-light);
+  margin-bottom: 30px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.option-btn.primary {
+  background: var(--iitb-blue);
   color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  width: 100%;
+  font-size: 1.2rem;
 }
