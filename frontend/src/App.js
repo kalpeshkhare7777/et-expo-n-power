@@ -42,12 +42,12 @@ const DIFFICULTY_TIMES = {
   'hard': 90,
   'very difficult': 120
 };
-  const [sessionInfo] = useState({
-    student_id: searchParams.get('student_id') || "22B0069", 
-    chapter_id: "grade7_exponents_and_powers",
-    session_id: `SESS_${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-    startTime: new Date().toISOString()
-  });
+const [sessionInfo] = useState({
+  student_id: searchParams.get('student_id') || "22B0069", 
+  chapter_id: "grade7_exponents_and_powers", // Updated to match Metadata API
+  session_id: `SESS_${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+  startTime: new Date().toISOString()
+});
 
   const [kcMasteryMap, setKcMasteryMap] = useState({
     KC11: 0.40, KC12: 0.35, KC13: 0.30, KC14: 0.30, KC15: 0.25,
@@ -105,19 +105,20 @@ const DIFFICULTY_TIMES = {
     const completionRatio = status === 'completed' ? 1.0 : parseFloat((session.currentTopicIndex / 5).toFixed(2));
 
     const payload = {
-      ...sessionInfo,
+      student_id: String(sessionInfo.student_id), 
+      session_id: String(sessionInfo.session_id),
+      chapter_id: "grade7_exponents_and_powers", // Must match backend exactly
       timestamp: new Date().toISOString(),
       session_status: status,
-      correct_answers: session.correct_answers,
-      wrong_answers: session.wrong_answers,
+      correct_answers: Math.floor(session.correct_answers),
+      wrong_answers: Math.floor(session.wrong_answers),
       questions_attempted: askedQuestionsRef.current.length,
-      total_questions: 22,
-      retry_count: session.retry_count,
-      hints_used: session.hints_used_total,
-      total_hints_embedded: 66,
+      total_questions: 25, // Updated to reflect 5 questions per KC
+      retry_count: Math.floor(session.retry_count),
+      hints_used: Math.floor(session.hints_used_total),
+      total_hints_embedded: 75, // 25 questions * 3 hints
       time_spent_seconds: timeSpent,
-      topic_completion_ratio: completionRatio,
-      p_l_post: finalMastery ?? null
+      topic_completion_ratio: parseFloat(Math.min(1.0, completionRatio).toFixed(2))
     };
 
     try {
