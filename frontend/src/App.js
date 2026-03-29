@@ -42,9 +42,13 @@ const DIFFICULTY_TIMES = {
   'hard': 90,
   'very difficult': 120
 };
+// 1. Get the ID directly from the searchParams
+const studentIdFromUrl = searchParams.get('student_id');
+
 const [sessionInfo] = useState({
-  student_id: searchParams.get('student_id') || "22B0069", 
-  chapter_id: "grade7_exponents_and_powers", // Updated to match Metadata API
+  // Use the URL ID if it exists, otherwise use the fallback
+  student_id: studentIdFromUrl || "22B0069", 
+  chapter_id: "grade7_exponents_and_powers",
   session_id: `SESS_${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
   startTime: new Date().toISOString()
 });
@@ -102,37 +106,53 @@ const [sessionInfo] = useState({
 
   const submitFinalPayload = async (status, finalMastery) => {
     const timeSpent = Math.floor((Date.now() - sessionStartTimestamp.current) / 1000);
-    const completionRatio = status === 'completed' ? 1.0 : parseFloat((session.currentTopicIndex / 5).toFixed(2));
+    const completionRatio = status === 'completed' ? 1.0 : parseFloat((session.usedQuestions.length / 15).toFixed(2));
 
     const payload = {
-      student_id: String(sessionInfo.student_id), 
+      student_id: String(sessionInfo.student_id),
       session_id: String(sessionInfo.session_id),
-      chapter_id: "grade7_exponents_and_powers", // Must match backend exactly
+      chapter_id: "grade7_exponents_and_powers",
       timestamp: new Date().toISOString(),
       session_status: status,
       correct_answers: Math.floor(session.correct_answers),
       wrong_answers: Math.floor(session.wrong_answers),
       questions_attempted: askedQuestionsRef.current.length,
-      total_questions: 25, // Updated to reflect 5 questions per KC
+      total_questions: 15,
       retry_count: Math.floor(session.retry_count),
       hints_used: Math.floor(session.hints_used_total),
-      total_hints_embedded: 75, // 25 questions * 3 hints
+      total_hints_embedded: 45,
       time_spent_seconds: timeSpent,
-      topic_completion_ratio: parseFloat(Math.min(1.0, completionRatio).toFixed(2))
+      topic_completion_ratio: Math.min(1.0, completionRatio),
+      p_l_post: finalMastery ?? null
     };
 
+    // EXPOSE JSON TO CONSOLE FOR DEBUGGING
+    console.log("--- FINAL INTEGRATION PAYLOAD ---");
+    console.dir(payload); 
+    console.table(payload);
+
     try {
-      await fetch(`${API_BASE}/log-session`, {
+      // Use 'await' to ensure the network actually starts before moving pages
+      const response = await fetch(`${API_BASE}/log-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      localStorage.removeItem('failed_session_retry');
+      
+      if (response.ok) {
+        localStorage.removeItem('failed_session_retry');
+        console.log("✅ Payload synced to server");
+      }
     } catch (e) {
+      console.error("❌ Network Failure, saving to local", e);
       localStorage.setItem('failed_session_retry', JSON.stringify(payload));
     }
-    navigate('/exit', { state: payload });
-  };
+
+    // Delay navigation slightly so you can see the log
+    setTimeout(() => {
+        navigate('/exit', { state: payload });
+    }, 500); 
+};
 
   const handleNextQuestion = async () => {
     try {
