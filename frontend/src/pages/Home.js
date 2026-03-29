@@ -21,8 +21,8 @@ const CHAPTER_METADATA = {
 function Home() {
   const navigate = useNavigate(); // 2. Initialize navigate
 
-  const handleBegin = () => {
-    navigate('/quiz'); // 3. Redirect to the path defined in index.js
+const handleBegin = () => {
+    navigate('/quiz'); 
   };
   
   return (

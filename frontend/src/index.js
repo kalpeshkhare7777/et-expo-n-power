@@ -4,12 +4,16 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home'; 
 import App from './App';       
 import Exit from './pages/Exit'; 
+import './index.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
+
+const basename = process.env.NODE_ENV === 'production' ? '/et-expo-n-power' : '';
+
 root.render(
   <React.StrictMode>
-    <Router> 
+    <Router basename={basename}> 
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/quiz" element={<App />} />
