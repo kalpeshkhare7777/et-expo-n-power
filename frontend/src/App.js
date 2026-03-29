@@ -6,6 +6,17 @@ import './App.css';
 
 const API_BASE = "https://et605-backend.onrender.com/api";
 
+const MISCONCEPTION_LIBRARY = {
+  "M1": { title: "Base vs Exponent", review: "Pari says: 'Look closely! The base is the big number on the ground—it's the one being multiplied. The exponent is the small number on top!'" },
+  "M2": { title: "Multiplication vs Power", review: "Roohi warns: 3⁴ is NOT 3 × 4. It means 3 × 3 × 3 × 3. Exponents are repeated multiplication!" },
+  "M3": { title: "Zero Exponent Rule", review: "Any non-zero number to the power 0 becomes 1. Think: aᵐ ÷ aᵐ = 1, so a⁰ = 1." },
+  "M4": { title: "Incomplete Expansion", review: "Roohi says: 'Don’t stop halfway! 2³ means 2 × 2 × 2 (which is 8). Count how many times the base repeats!'" },
+  "M5": { title: "Even Exponent Sign", review: "Even exponents mean negatives cancel out! (-2) × (-2) = +4. Even powers always result in positive!" },
+  "M6": { title: "The Bracket Trap", review: "(-3)² = 9 but -3² = -9. Brackets decide if the minus is part of the base or just sitting outside.'" },
+  "M23": { title: "Decimal Placement", review: "Check your zeros! When multiplying by 10ⁿ, the decimal moves n places to the right. Count the jumps!" }
+};
+
+
 const TOPIC_STRUCTURE = [
   { parent: "KC1", title: "Unit 1: Large Numbers", subs: ["KC11", "KC12", "KC13", "KC14", "KC15"], subTitles: { "KC11": "Identify Base & Exponent", "KC12": "Repeated Multiplication", "KC13": "Expansion", "KC14": "Finding Value", "KC15": "Prime Powers" } },
   { parent: "KC2", title: "Unit 2: Negative Bases", subs: ["KC21", "KC22", "KC23", "KC24"], subTitles: { "KC21": "Negative Powers", "KC22": "Determining Sign", "KC23": "Variable Products", "KC24": "The Bracket Trap" } },
@@ -14,16 +25,26 @@ const TOPIC_STRUCTURE = [
   { parent: "KC5", title: "Unit 5: Standard Form", subs: ["KC51", "KC52", "KC53", "KC54"], subTitles: { "KC51": "Anatomy of SF", "KC52": "Large Numbers", "KC53": "Comparing", "KC54": "Interpreting" } }
 ];
 
+
 function App() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const questionStartTime = useRef(null);
   const sessionStartTimestamp = useRef(Date.now());
   const askedQuestionsRef = useRef([]); 
+// Add these to your state declarations
+const [timeLeft, setTimeLeft] = useState(null);
+const timerRef = useRef(null);
 
+const DIFFICULTY_TIMES = {
+  'easy': 30,
+  'medium': 60,
+  'hard': 90,
+  'very difficult': 120
+};
   const [sessionInfo] = useState({
     student_id: searchParams.get('student_id') || "22B0069", 
-    chapter_id: "grade7_exponents_and_powers", // FIXED CANONICAL ID
+    chapter_id: "grade7_exponents_and_powers",
     session_id: `SESS_${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
     startTime: new Date().toISOString()
   });
@@ -57,10 +78,11 @@ function App() {
   const [feedback, setFeedback] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [activeMisconception, setActiveMisconception] = useState(null);
 
   async function fetchNextQuestion(subtopicId, difficulty) {
     try {
-      setCurrentQuestion(null); // Trigger Loading Guard
+      setCurrentQuestion(null);
       const res = await fetch(`${API_BASE}/questions/${subtopicId}/${difficulty}`);
       const questions = await res.json();
       const available = questions.filter(q => !askedQuestionsRef.current.includes(q._id));
@@ -72,6 +94,7 @@ function App() {
       setIsResolved(false); 
       setActiveHints([]); 
       setFeedback(null); 
+      setActiveMisconception(null);
       questionStartTime.current = Date.now();
     } catch (e) { console.error("Fetch Error", e); }
   }
@@ -166,6 +189,34 @@ function App() {
       fetchNextQuestion(currentQuestion?.kc_id || "KC11", 'easy');
     }
   };
+  useEffect(() => {
+    // Clear any existing timer when a question changes
+    if (timerRef.current) clearInterval(timerRef.current);
+  
+    if (viewMode === 'QUIZ' && currentQuestion && !isResolved) {
+      const limit = DIFFICULTY_TIMES[currentQuestion.difficulty] || 60;
+      setTimeLeft(limit);
+  
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            handleTimerExpiry(); // Reveal answer when time is up
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+  
+    return () => clearInterval(timerRef.current);
+  }, [currentQuestion, viewMode, isResolved]);
+  
+  const handleTimerExpiry = () => {
+    setFeedback('timeout');
+    setIsResolved(true);
+    setShowCorrectAns(true);
+  };
 
   useEffect(() => {
     let targetId;
@@ -180,9 +231,20 @@ function App() {
   const handleAnswer = (opt) => {
     if (isResolved || !currentQuestion) return;
     if (opt === currentQuestion.answer) { 
-        setFeedback('correct'); setIsResolved(true); 
+        clearInterval(timerRef.current);
+        setFeedback('correct'); 
+        setIsResolved(true); 
+        setActiveMisconception(null);
     } else { 
-        setSelectedWrong(p => [...p, opt]); setFeedback('wrong'); setTimeout(() => setFeedback(null), 500); 
+        setSelectedWrong(p => [...p, opt]); 
+        setFeedback('wrong'); 
+
+        const trigger = currentQuestion.misconception_map?.find(m => m.option === opt);
+        if (trigger && MISCONCEPTION_LIBRARY[trigger.misconception_id]) {
+          setActiveMisconception(MISCONCEPTION_LIBRARY[trigger.misconception_id]);
+        } else {
+          setTimeout(() => setFeedback(null), 800); 
+        }
     }
   };
 
@@ -216,6 +278,24 @@ function App() {
         </div>
       )}
 
+      {activeMisconception && (
+        <div className="modal-overlay character-modal">
+          <div className="modal-content animate-pop purple-gradient-border">
+            <div className="character-header">
+              <div className="character-avatar">🧐</div>
+              <div>
+                <h3>Wait a second!</h3>
+                <div className="misconception-label">{activeMisconception.title}</div>
+              </div>
+            </div>
+            <p className="review-text">{activeMisconception.review}</p>
+            <button className="cta-btn full-width" onClick={() => { setActiveMisconception(null); setFeedback(null); }}>
+              Got it, let me try again!
+            </button>
+          </div>
+        </div>
+      )}
+
       <aside className="sidebar">
         <div className="logo-section"><h2>IITB <span>MathAI</span></h2></div>
         <nav className="nav-menu">
@@ -232,7 +312,7 @@ function App() {
                     return (
                       <div key={sub} className={`sub-item-container ${st}`}>
                         <div className="sub-item"><span className="sub-dot"></span>{TOPIC_STRUCTURE[pIdx].subTitles[sub]}</div>
-                        <div className="side-mastery-track"><div className="side-mastery-fill" style={{ width: `${mVal * 100}%`, background: mVal > 0.8 ? '#3fb950' : '#5865f2' }}></div></div>
+                        <div className="side-mastery-track"><div className="side-mastery-fill" style={{ width: `${mVal * 100}%`, background: mVal > 0.8 ? '#3fb950' : '#4e54c8' }}></div></div>
                       </div>
                     );
                   })}
@@ -272,26 +352,100 @@ function App() {
             </div>
           )}
           {viewMode === 'QUIZ' && (
-            <div className="quiz-area animate-in">
-              {!currentQuestion ? <div className="loading-spinner">Initializing Adaptive Quiz...</div> : (
-                <>
-                  {feedback && <div className={`feedback-bubble ${feedback}`}>{feedback === 'correct' ? 'Brilliant!' : 'Try Again'}</div>}
-                  <h2>{currentQuestion.question_text}</h2>
-                  <div className="options-container">
-                    {currentQuestion.options?.map((opt, index) => {
-                      let cls = (isResolved && opt === currentQuestion.answer) ? "reveal-correct" : (selectedWrong.includes(opt) ? "reveal-wrong" : "");
-                      return <button key={opt} className={`quiz-opt ${cls}`} onClick={() => handleAnswer(opt)} disabled={isResolved && opt !== currentQuestion.answer}><span className="opt-label">{String.fromCharCode(65 + index)}.</span> {opt}</button>;
-                    })}
-                  </div>
-                  <div className="interaction-footer">
-                    <button className="hint-btn-modern" onClick={handleHintOrReveal} disabled={isResolved}>💡 Hint ({activeHints.length}/3)</button>
-                    <div className="hints-stack">{activeHints.map((h, i) => <div key={i} className="hint-item animate-hint">Step {i+1}: {h}</div>)}</div>
-                    {isResolved && <button className="next-btn animate-pop" onClick={handleNextQuestion}>Next Question →</button>}
-                  </div>
-                </>
-              )}
+  <div className="quiz-area animate-in">
+    {!currentQuestion ? (
+      <div className="loading-spinner">Initializing Adaptive Quiz...</div>
+    ) : (
+      <>
+        {/* Header Section: Timer and Progress */}
+        <div className="quiz-header-meta" style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '20px' 
+        }}>
+          <div className="kc-counter">
+            Attempt: <strong>{session.usedQuestions.length + 1}</strong> / 15
+          </div>
+          
+          <div className={`timer-pill ${timeLeft <= 10 ? 'timer-urgent' : ''}`} style={{
+            padding: '8px 16px',
+            borderRadius: '20px',
+            background: timeLeft <= 10 ? '#ffe3e3' : '#f0f2f5',
+            color: timeLeft <= 10 ? '#d63031' : '#444',
+            fontWeight: 'bold',
+            border: `2px solid ${timeLeft <= 10 ? '#d63031' : '#ddd'}`,
+            transition: 'all 0.3s ease'
+          }}>
+            <span style={{ marginRight: '8px' }}>⏱️</span>
+            {timeLeft}s
+          </div>
+        </div>
+
+        {/* Feedback Messages */}
+        {feedback && (
+          <div className={`feedback-bubble ${feedback}`}>
+            {feedback === 'correct' && 'Brilliant!'}
+            {feedback === 'wrong' && 'Try Again'}
+            {feedback === 'timeout' && "Time's up! Here is the correct answer."}
+          </div>
+        )}
+
+        <h2>{currentQuestion.question_text}</h2>
+
+        <div className="options-container">
+          {currentQuestion.options?.map((opt, index) => {
+            // Logic: Reveal correct answer if resolved (by click OR timeout)
+            // Highlight wrong choices only if the user actually clicked them
+            let cls = "";
+            if (isResolved && opt === currentQuestion.answer) {
+              cls = "reveal-correct";
+            } else if (selectedWrong.includes(opt)) {
+              cls = "reveal-wrong";
+            }
+
+            return (
+              <button
+                key={opt}
+                className={`quiz-opt ${cls}`}
+                onClick={() => handleAnswer(opt)}
+                disabled={isResolved} // Disable all buttons once time is up or correct answer found
+              >
+                <span className="opt-label">{String.fromCharCode(65 + index)}.</span> {opt}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="interaction-footer">
+          <div className="hint-section">
+            <button 
+              className="hint-btn-modern" 
+              onClick={handleHintOrReveal} 
+              disabled={isResolved}
+            >
+              <span className="icon">💡</span> Hint ({activeHints.length}/3)
+            </button>
+            <div className="hints-stack">
+              {activeHints.map((h, i) => (
+                <div key={i} className="hint-bubble animate-hint">
+                  <span className="hint-step">Step {i + 1}</span> {h}
+                </div>
+              ))}
             </div>
+          </div>
+
+          {/* Next Button appears if user is correct OR if timer ran out */}
+          {isResolved && (
+            <button className="next-btn animate-pop" onClick={handleNextQuestion}>
+              Next Question →
+            </button>
           )}
+        </div>
+      </>
+    )}
+  </div>
+)}
         </section>
       </main>
     </div>
