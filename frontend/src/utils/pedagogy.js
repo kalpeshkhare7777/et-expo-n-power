@@ -1,40 +1,24 @@
-import { questionBank, kcs } from '../data/domain';
+export const getNextPedAction = (state) => {
+  const { p_star_l, confidence, frustration, guessRate, stability, engagement } = state;
 
-export const getNextAction = (state) => {
-  const { currentSubskill, mastery, lastResponseCorrect, misconceptionDetected, consecutiveCorrect } = state;
+  // 1. Next KC Transition Logic
+  const M_ready = (0.5 * p_star_l) + (0.2 * stability) + (0.15 * confidence) + (0.15 * (1 - guessRate));
+  const Risk = (0.4 * frustration) + (0.3 * guessRate) + (0.3 * (1 - stability));
 
-  if (misconceptionDetected) {
-    return { type: 'REMEDIATE', message: "Misconception detected! Let's review the rule.", payload: { difficulty: 'easy' } };
-  }
-
-  // Mastery Thresholds [cite: 1218-1223, 1266]
-  if (mastery >= 0.85 && consecutiveCorrect >= 2) {
-    return { type: 'ADVANCE_KC', message: "Mastery achieved! Moving to next topic.", payload: { difficulty: 'difficult' } };
-  }
-
-  if (mastery < 0.60) {
-    return { type: 'SCAFFOLD', message: "Let's try a simpler version of this concept.", payload: { difficulty: 'easy' } };
-  }
-
-  return { type: 'PRACTICE', message: "Keep going! Strengthening your understanding.", payload: { difficulty: lastResponseCorrect ? 'medium' : 'easy' } };
-};
-
-export const selectQuestion = (subskillId, difficulty, usedIds) => {
-  // Try target difficulty first
-  let pool = questionBank.filter(q => q.kc === subskillId && q.difficulty === difficulty && !usedIds.includes(q.id));
+  if (M_ready >= 0.8 && Risk < 0.3) return { type: 'ADVANCE' };
   
-  // Fallback to any unused in KC 
-  if (pool.length === 0) {
-    pool = questionBank.filter(q => q.kc === subskillId && !usedIds.includes(q.id));
-  }
+  // 2. Remedial Content Trigger
+  if (frustration > 0.7 || (p_star_l < 0.3 && state.acc < 0.2)) return { type: 'REMEDIAL' };
 
-  // Loop Prevention: Reuse easiest if all are used [cite: 1286]
-  if (pool.length === 0) {
-    pool = questionBank.filter(q => q.kc === subskillId).sort((a, b) => {
-      const dMap = { easy: 1, medium: 2, difficult: 3, 'very difficult': 4 };
-      return dMap[a.difficulty] - dMap[b.difficulty];
-    });
-  }
+  // 3. Fatigue Detection
+  if (frustration > 0.8 && engagement < 0.2) return { type: 'BREAK_PROMPT' };
 
-  return pool[0];
+  // 4. Difficulty Adjustment (Target Zone 0.75)
+  const D_signal = (0.5 * (p_star_l - 0.75)) + (0.2 * confidence) - (0.2 * frustration) - (0.1 * guessRate);
+  
+  let difficulty = 'easy';
+  if (D_signal > 0.2) difficulty = 'hard';
+  else if (D_signal > -0.1) difficulty = 'medium';
+
+  return { type: 'PRACTICE', difficulty };
 };
