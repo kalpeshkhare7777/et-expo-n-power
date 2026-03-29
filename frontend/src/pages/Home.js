@@ -1,33 +1,30 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom'; // 1. Import useNavigate
+import { useNavigate, useSearchParams } from 'react-router-dom'; // Added useSearchParams
 
 const CHAPTER_METADATA = {
-  grade: 7,
-  chapter_name: "Exponents and Powers",
-  chapter_id: "grade7_exponents_and_powers",
-  chapter_url: "https://kalpeshkhare7777.github.io/et-expo-n-/",
-  chapter_difficulty: 0.55,
-  expected_completion_time_seconds: 3600,
-  subtopics: [
-    { subtopic_id: "KC1", name: "Introduction to Exponents", difficulty: 0.25 },
-    { subtopic_id: "KC2", name: "Special Powers and Negative Bases", difficulty: 0.45 },
-    { subtopic_id: "KC3", name: "Laws of Exponents (Same Base)", difficulty: 0.60 },
-    { subtopic_id: "KC4", name: "Laws of Exponents (Different Bases)", difficulty: 0.70 },
-    { subtopic_id: "KC5", name: "Standard Form (Scientific Notation)", difficulty: 0.55 }
-  ],
-  prerequisites: []
+  // ... your existing metadata object
 };
 
 function Home() {
-  const navigate = useNavigate(); // 2. Initialize navigate
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams(); // 1. Access the URL parameters
 
-const handleBegin = () => {
-    navigate('/quiz'); 
+  // 2. Capture the student_id from the URL (or default if missing)
+  const studentId = searchParams.get('student_id') || "22B0069";
+
+  const handleBegin = () => {
+    // 3. Pass the student_id forward to the quiz route
+    navigate(`/quiz?student_id=${studentId}`); 
   };
   
   return (
     <div className="dashboard-layout" style={{ justifyContent: 'center', alignItems: 'center' }}>
       <div className="glass-card animate-in" style={{ textAlign: 'center', maxWidth: '600px' }}>
+        {/* Displaying the ID so you can verify it's working */}
+        <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+          Student ID: <strong>{studentId}</strong>
+        </div>
+
         <h1>{CHAPTER_METADATA.chapter_name}</h1>
         <p className="big-text" style={{margin: '20px 0'}}>Grade {CHAPTER_METADATA.grade} | Math Assessment</p>
         
@@ -36,14 +33,9 @@ const handleBegin = () => {
           <span> Time: ~60 mins</span>
         </div>
 
-        {/* Change onClick to our new handleBegin function */}
         <button className="cta-btn" onClick={handleBegin}>
           Begin Chapter
         </button>
-
-        <script type="application/json" id="merge-metadata">
-          {JSON.stringify(CHAPTER_METADATA)}
-        </script>
       </div>
     </div>
   );
