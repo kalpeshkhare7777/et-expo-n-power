@@ -132,7 +132,6 @@ const [sessionInfo] = useState({
     console.table(payload);
 
     try {
-      // Use 'await' to ensure the network actually starts before moving pages
       const response = await fetch(`${API_BASE}/log-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,18 +139,16 @@ const [sessionInfo] = useState({
       });
       
       if (response.ok) {
-        localStorage.removeItem('failed_session_retry');
-        console.log("✅ Payload synced to server");
+        console.log("✅ Data saved to MongoDB");
       }
     } catch (e) {
-      console.error("❌ Network Failure, saving to local", e);
-      localStorage.setItem('failed_session_retry', JSON.stringify(payload));
+      console.error("❌ Save failed", e);
     }
-
-    // Delay navigation slightly so you can see the log
+  
+    // Pass student_id in the URL to the Exit page
     setTimeout(() => {
-        navigate('/exit', { state: payload });
-    }, 500); 
+        navigate(`/exit?student_id=${sessionInfo.student_id}`);
+    }, 500);
 };
 
   const handleNextQuestion = async () => {
