@@ -35,6 +35,7 @@ function App() {
 // Add these to your state declarations
 const [timeLeft, setTimeLeft] = useState(null);
 const timerRef = useRef(null);
+const [showHelpModal, setShowHelpModal] = useState(false);
 
 const DIFFICULTY_TIMES = {
   'easy': 30,
@@ -69,7 +70,8 @@ const [sessionInfo] = useState({
     wrong_answers: 0,
     retry_count: 0,
     hints_used_total: 0,
-    usedQuestions: []
+    usedQuestions: [],
+    failCounter: {} // Track fails per KC: { "KC11": 3 }
   });
 
   const [viewMode, setViewMode] = useState('MOTIVATION');
@@ -249,15 +251,33 @@ const [sessionInfo] = useState({
 
   const handleAnswer = (opt) => {
     if (isResolved || !currentQuestion) return;
+    const currentKC = currentQuestion.kc_id;
+  
     if (opt === currentQuestion.answer) { 
         clearInterval(timerRef.current);
         setFeedback('correct'); 
         setIsResolved(true); 
-        setActiveMisconception(null);
+        // Reset fail counter on success
+        setSession(prev => ({
+          ...prev,
+          failCounter: { ...prev.failCounter, [currentKC]: 0 }
+        }));
     } else { 
         setSelectedWrong(p => [...p, opt]); 
         setFeedback('wrong'); 
-
+  
+        // Increment fail counter
+        const newCount = (session.failCounter[currentKC] || 0) + 1;
+        setSession(prev => ({
+          ...prev,
+          failCounter: { ...prev.failCounter, [currentKC]: newCount }
+        }));
+  
+        // Trigger Modal if 3 fails reached
+        if (newCount >= 3) {
+          setShowHelpModal(true);
+        }
+  
         const trigger = currentQuestion.misconception_map?.find(m => m.option === opt);
         if (trigger && MISCONCEPTION_LIBRARY[trigger.misconception_id]) {
           setActiveMisconception(MISCONCEPTION_LIBRARY[trigger.misconception_id]);
@@ -320,6 +340,38 @@ const [sessionInfo] = useState({
           </div>
         </div>
       )}
+      {showHelpModal && (
+  <div className="modal-overlay">
+    <div className="modal-content help-modal animate-pop">
+      <div style={{ textAlign: 'center' }}>
+        <span style={{ fontSize: '40px' }}>📺</span>
+        <h3>Need a quick refresher?</h3>
+        <p>It looks like this topic is a bit tricky. Watch this short tutorial to clear your doubts!</p>
+        
+        <div className="video-container" style={{ margin: '20px 0' }}>
+          <iframe 
+            width="100%" 
+            height="200" 
+            src="https://www.youtube.com/embed/dSADENg_nBg" 
+            title="Exponents Tutorial"
+            frameBorder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowFullScreen>
+          </iframe>
+        </div>
+
+        <div className="modal-actions" style={{ flexDirection: 'column', gap: '10px' }}>
+          <button className="cta-btn full-width" onClick={() => setShowHelpModal(false)}>
+            I'm Ready to Try Again!
+          </button>
+          <button className="btn-exit full-width" onClick={() => submitFinalPayload('struggling_exit', kcMasteryMap[currentQuestion?.kc_id])}>
+            Exit and Review Later
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
       {activeMisconception && (
         <div className="modal-overlay character-modal">
