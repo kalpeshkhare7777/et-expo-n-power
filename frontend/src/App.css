@@ -425,3 +425,167 @@ body {
   from { opacity: 0; transform: scale(0.8) translateY(40px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
+.module-badge {
+  display: inline-block;
+  background: #4e54c8;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.example-box {
+  background: rgba(255, 255, 255, 0.5);
+  padding: 25px;
+  border-left: 5px solid #4e54c8;
+  border-radius: 8px;
+  margin: 20px 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.example-card h2 {
+  color: #4e54c8;
+}
+
+.motivation-card {
+  border-top: 5px solid #ff9f43;
+}
+.preserve-newline {
+  white-space: pre-wrap;       /* This tells the browser to respect \n */
+  word-wrap: break-word;       /* Ensures long words don't break the layout */
+  line-height: 1.6;            /* Makes the story text easier to read */
+  display: block;
+  margin-bottom: 15px;
+}
+/* ... [All your existing CSS remains above this line] ... */
+
+/* --- MOBILE RESPONSIVENESS & TOUCH OPTIMIZATIONS --- */
+
+/* Mobile Sidebar Toggle - Hidden by default on desktop */
+.mobile-nav-header {
+  display: none;
+  width: 100%;
+  padding: 15px 20px;
+  background: var(--bg-dark);
+  border-bottom: 1px solid var(--border-color);
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+  /* Sidebar becomes an overlay on mobile */
+  .sidebar {
+    position: fixed;
+    left: -300px; /* Hidden by default */
+    z-index: 2000;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+  }
+
+  /* State when sidebar is toggled open (you can trigger this by adding .open class via JS) */
+  .sidebar.open {
+    left: 0;
+  }
+
+  .main-viewport {
+    padding: 20px 15px;
+  }
+
+  .top-nav {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .mastery-indicator {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  /* Adjust quiz grid for smaller screens */
+  .options-container {
+    grid-template-columns: 1fr; /* Single column for options */
+    gap: 12px;
+  }
+
+  .quiz-opt {
+    padding: 15px;
+    font-size: 0.95rem;
+  }
+
+  .glass-card, .quiz-area {
+    padding: 25px 20px;
+  }
+
+  /* Scale down large text for mobile */
+  .big-text {
+    font-size: 1.1rem !important;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+  }
+
+  /* Misconception Modal Mobile view */
+  .character-modal .modal-content {
+    width: 90%;
+    padding: 1.5rem;
+  }
+
+  .character-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 2.5rem;
+  }
+}
+
+/* Specific fix for very small devices */
+@media (max-width: 480px) {
+  .top-nav {
+    padding: 15px;
+  }
+
+  .cta-btn, .next-btn {
+    width: 100%; /* Full width buttons for easier tapping */
+    justify-content: center;
+  }
+
+  .kc-counter {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .example-box {
+    padding: 15px;
+    font-size: 1rem;
+  }
+}
+
+/* Touch Device Optimization */
+@media (hover: none) {
+  .quiz-opt:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .cta-btn:hover {
+    transform: none;
+  }
+  
+  /* Make buttons slightly larger for fat-finger taps */
+  .quiz-opt, .cta-btn, .next-btn {
+    min-height: 50px;
+  }
+}

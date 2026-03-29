@@ -68,7 +68,8 @@ const DIFFICULTY_TIMES = {
     usedQuestions: []
   });
 
-  const [viewMode, setViewMode] = useState('MOTIVATION'); 
+  const [viewMode, setViewMode] = useState('MOTIVATION');
+  const [exampleIndex, setExampleIndex] = useState(0); 
   const [activeKCData, setActiveKCData] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [activeHints, setActiveHints] = useState([]);
@@ -263,6 +264,30 @@ const DIFFICULTY_TIMES = {
     utterance.onend = () => setIsSpeaking(false);
     window.speechSynthesis.speak(utterance);
   };
+  const handleFlowNext = () => {
+    if (viewMode === 'MOTIVATION') {
+      setViewMode('CONTENT');
+    } else if (viewMode === 'CONTENT') {
+      if (activeKCData?.worked_examples?.length > 0) {
+        setExampleIndex(0);
+        setViewMode('WORKED_EXAMPLE');
+      } else {
+        startQuiz();
+      }
+    } else if (viewMode === 'WORKED_EXAMPLE') {
+      if (exampleIndex < activeKCData.worked_examples.length - 1) {
+        setExampleIndex(prev => prev + 1);
+      } else {
+        startQuiz();
+      }
+    }
+  };
+
+  const startQuiz = () => {
+    const currentSubKC = TOPIC_STRUCTURE[session.currentTopicIndex].subs[session.currentSubIndex] || "KC11";
+    fetchNextQuestion(currentSubKC, 'easy');
+    setViewMode('QUIZ');
+  };
 
   return (
     <div className="dashboard-layout">
@@ -297,7 +322,7 @@ const DIFFICULTY_TIMES = {
       )}
 
       <aside className="sidebar">
-        <div className="logo-section"><h2>IITB <span>MathAI</span></h2></div>
+        <div className="logo-section"><h2>EdBuddy <span>ExpoTutor</span></h2></div>
         <nav className="nav-menu">
           {TOPIC_STRUCTURE.map((topic, pIdx) => (
             <div key={topic.parent} className="nav-group">
@@ -334,23 +359,62 @@ const DIFFICULTY_TIMES = {
         </header>
 
         <section className="content-container">
+          {/* 1. MOTIVATION SCREEN */}
           {viewMode === 'MOTIVATION' && (
-            <div className="glass-card animate-in">
-              <button className="tts-btn" onClick={() => handleListen(activeKCData?.motivation)}>🔊 Listen</button>
-              <h2>Discovery</h2><p className="big-text">{activeKCData?.motivation}</p>
-              <button className="cta-btn" onClick={() => setViewMode('CONTENT')}>Start Lesson →</button>
-            </div>
-          )}
-          {viewMode === 'CONTENT' && (
-            <div className="glass-card animate-in">
-              <h2>{activeKCData?.title}</h2>
-              <div className="theory-body" dangerouslySetInnerHTML={{ __html: activeKCData?.content }}></div>
-              <button className="cta-btn" onClick={() => {
-                if(session.currentSubIndex === -1) setSession(p => ({...p, currentSubIndex: 0}));
-                else { fetchNextQuestion(TOPIC_STRUCTURE[session.currentTopicIndex].subs[session.currentSubIndex], 'easy'); setViewMode('QUIZ'); }
-              }}>Start Practice</button>
-            </div>
-          )}
+  <div className="glass-card animate-in">
+    <button className="tts-btn" onClick={() => handleListen(activeKCData?.motivation)}>🔊 Listen</button>
+    <h2>Discovery</h2>
+    {/* Wrap the motivation text here */}
+    <div className="preserve-newline big-text">
+      {activeKCData?.motivation}
+    </div>
+    <button className="cta-btn" onClick={handleFlowNext}>Start Lesson →</button>
+  </div>
+)}
+
+  {/* 2. CONTENT SCREEN */}
+  {viewMode === 'CONTENT' && (
+  <div className="glass-card animate-in">
+    <div className="module-badge">Theory & Concepts</div>
+    <h2>{activeKCData?.title}</h2>
+    
+    {/* Applying 'preserve-newline' here ensures that 
+        any \n characters in your 'content' string 
+        create actual line breaks in the browser.
+    */}
+    <div 
+      className="theory-body preserve-newline" 
+      style={{ marginBottom: '30px' }}
+      dangerouslySetInnerHTML={{ __html: activeKCData?.content }} 
+    />
+
+    <button className="cta-btn" onClick={() => {
+      if(session.currentSubIndex === -1) {
+        setSession(p => ({...p, currentSubIndex: 0}));
+      } else {
+        handleFlowNext();
+      }
+    }}>
+      {session.currentSubIndex === -1 ? "Explore Lessons →" : "See Examples →"}
+    </button>
+  </div>
+)}
+
+  {/* 3. WORKED EXAMPLES SCREEN (Step-by-Step) */}
+  {viewMode === 'WORKED_EXAMPLE' && (
+  <div className="glass-card animate-in example-card">
+    <div className="module-badge">Example {exampleIndex + 1}</div>
+    <div className="example-box">
+      {/* Use the class here for the examples */}
+      <div className="preserve-newline theory-body">
+        {activeKCData.worked_examples[exampleIndex]}
+      </div>
+    </div>
+    <button className="cta-btn" onClick={handleFlowNext}>
+      {exampleIndex < activeKCData.worked_examples.length - 1 ? "Next Example →" : "Start Quiz →"}
+    </button>
+  </div>
+)}
           {viewMode === 'QUIZ' && (
   <div className="quiz-area animate-in">
     {!currentQuestion ? (
